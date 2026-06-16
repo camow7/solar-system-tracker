@@ -20,6 +20,36 @@ const CONFIG = {
     { name: 'Neptune', body: 'Neptune', radius: 8, color: '#4166F5', eccentricity: 0.009 },
   ],
 
+  // Moons of planets (body name, parent planet index, actual AU orbit distance)
+  moons: [
+    // Jupiter's Galilean moons
+    { name: 'Io', body: 'Io', parent: 'Jupiter', parentIndex: 4, color: '#FFD700', radius: 1.2 },
+    { name: 'Europa', body: 'Europa', parent: 'Jupiter', parentIndex: 4, color: '#E8E8E8', radius: 1.2 },
+    { name: 'Ganymede', body: 'Ganymede', parent: 'Jupiter', parentIndex: 4, color: '#A9A9A9', radius: 1.4 },
+    { name: 'Callisto', body: 'Callisto', parent: 'Jupiter', parentIndex: 4, color: '#696969', radius: 1.3 },
+    // Saturn's moons
+    { name: 'Titan', body: 'Titan', parent: 'Saturn', parentIndex: 5, color: '#FFA500', radius: 1.5 },
+    { name: 'Enceladus', body: 'Enceladus', parent: 'Saturn', parentIndex: 5, color: '#F0F8FF', radius: 0.8 },
+    { name: 'Rhea', body: 'Rhea', parent: 'Saturn', parentIndex: 5, color: '#D3D3D3', radius: 1.0 },
+    // Neptune's moon
+    { name: 'Triton', body: 'Triton', parent: 'Neptune', parentIndex: 7, color: '#87CEEB', radius: 1.1 },
+  ],
+
+  // Major asteroids in the asteroid belt (rough AU positions)
+  asteroids: [
+    { name: 'Ceres', au: 2.77, eccentricity: 0.076, color: '#808080' },
+    { name: 'Vesta', au: 2.36, eccentricity: 0.089, color: '#A0522D' },
+    { name: 'Pallas', au: 2.77, eccentricity: 0.231, color: '#696969' },
+    { name: 'Juno', au: 2.67, eccentricity: 0.256, color: '#8B4513' },
+  ],
+
+  // Known spacecraft (approximate positions, actual positions would need live data)
+  spacecraft: [
+    { name: 'JWST', au: 0.01, angle: 0.5, color: '#FFD700', symbol: '⭐' }, // Near Earth-Sun L2
+    { name: 'Parker Solar Probe', au: 0.1, angle: 1.2, color: '#FF6347', symbol: '🚀' },
+    { name: 'Voyager 1', au: 50, angle: 0.8, color: '#90EE90', symbol: '→' }, // Far out
+  ],
+
   // Visual scale: log-compressed radius for legibility
   // Lower value = more spread out; higher = more compressed
   // 1.5 = tight inner planets; 1.3 = better spacing
@@ -636,6 +666,134 @@ function drawMoonAroundEarth(date, earthX, earthY) {
   }
 }
 
+/**
+ * Draw all planetary moons (Jupiter, Saturn, Neptune moons)
+ */
+function drawMoons(date) {
+  // Group moons by parent planet
+  const moonsByParent = {};
+  CONFIG.moons.forEach(moon => {
+    if (!moonsByParent[moon.parent]) {
+      moonsByParent[moon.parent] = [];
+    }
+    moonsByParent[moon.parent].push(moon);
+  });
+
+  // Get planet positions and draw their moons
+  CONFIG.planets.forEach((planet, index) => {
+    const planetPos = getPlanetPosition(planet.body, date);
+    if (!planetPos || !moonsByParent[planet.body]) return;
+
+    const pixelRadius = auToPixels(planetPos.au, index);
+    const planetX = state.centerX + pixelRadius * Math.cos(planetPos.angle);
+    const planetY = state.centerY + pixelRadius * Math.sin(planetPos.angle);
+
+    // Draw each moon around its parent planet
+    moonsByParent[planet.body].forEach((moon, moonIndex) => {
+      try {
+        const moonHelio = Astronomy.HelioVector(moon.body, date);
+        const moonRelX = moonHelio.x - planetPos.x;
+        const moonRelY = moonHelio.y - planetPos.y;
+
+        // Scale moon distance (exaggerate for visibility)
+        const moonOrbitDistance = Math.sqrt(moonRelX * moonRelX + moonRelY * moonRelY);
+        const moonVisualDistance = planet.radius * (1.5 + moonIndex * 0.8); // Stack moons at different distances
+
+        const moonAngle = Math.atan2(moonRelY, moonRelX);
+        const moonX = planetX + moonVisualDistance * Math.cos(moonAngle);
+        const moonY = planetY + moonVisualDistance * Math.sin(moonAngle);
+
+        // Draw moon
+        state.ctx.fillStyle = moon.color;
+        state.ctx.beginPath();
+        state.ctx.arc(moonX, moonY, moon.radius, 0, Math.PI * 2);
+        state.ctx.fill();
+
+        // Subtle outline
+        state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        state.ctx.lineWidth = 0.3;
+        state.ctx.stroke();
+      } catch (err) {
+        // Moon not available in this time period
+      }
+    });
+  });
+}
+
+/**
+ * Draw asteroid belt
+ */
+function drawAsteroids(date) {
+  CONFIG.asteroids.forEach(asteroid => {
+    try {
+      // Asteroids don't have direct support in astronomy-engine,
+      // so we'll approximate their position using heliocentric ellipse
+      // Position them evenly spaced in the belt area
+      const au = asteroid.au;
+      const angle = (date.getTime() / 1000 / 365.25 / 86400 + asteroid.au) % (Math.PI * 2);
+
+      const pixelRadius = state.centerX * 0.35; // Rough asteroid belt zone
+      const asteroidIndex = CONFIG.asteroids.indexOf(asteroid);
+      const spreadDistance = pixelRadius + asteroidIndex * 8;
+
+      const x = state.centerX + spreadDistance * Math.cos(angle);
+      const y = state.centerY + spreadDistance * Math.sin(angle);
+
+      // Draw small asteroid
+      state.ctx.fillStyle = asteroid.color;
+      state.ctx.beginPath();
+      state.ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+      state.ctx.fill();
+    } catch (err) {
+      console.warn('Failed to render asteroid:', err);
+    }
+  });
+}
+
+/**
+ * Draw spacecraft
+ */
+function drawSpacecraft(date) {
+  CONFIG.spacecraft.forEach(craft => {
+    try {
+      // For now, use approximate fixed positions
+      // In a real implementation, these would use actual mission data APIs
+      const angle = (date.getTime() / 1000 / 365.25 / 86400 + craft.angle) % (Math.PI * 2);
+
+      // Map AU distance to pixels
+      let pixelDistance;
+      if (craft.au < 1) {
+        pixelDistance = auToPixels(craft.au, 2); // Near Earth
+      } else if (craft.au < 35) {
+        pixelDistance = auToPixels(craft.au, Math.floor(craft.au)); // Inner solar system
+      } else {
+        pixelDistance = state.centerX * 0.45; // Far out
+      }
+
+      const x = state.centerX + pixelDistance * Math.cos(angle);
+      const y = state.centerY + pixelDistance * Math.sin(angle);
+
+      // Draw spacecraft as small diamond
+      const size = 2;
+      state.ctx.fillStyle = craft.color;
+      state.ctx.beginPath();
+      state.ctx.moveTo(x + size, y);
+      state.ctx.lineTo(x, y + size);
+      state.ctx.lineTo(x - size, y);
+      state.ctx.lineTo(x, y - size);
+      state.ctx.closePath();
+      state.ctx.fill();
+
+      // Outline
+      state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      state.ctx.lineWidth = 0.5;
+      state.ctx.stroke();
+    } catch (err) {
+      console.warn('Failed to render spacecraft:', err);
+    }
+  });
+}
+
 function frame() {
   // Clear canvas with dark background
   state.ctx.fillStyle = '#000';
@@ -647,6 +805,9 @@ function frame() {
   // Draw orbital rings
   drawOrbits();
 
+  // Draw asteroid belt
+  drawAsteroids(state.currentDate);
+
   // Draw orbit trails (before planets so they appear behind)
   drawTrails();
 
@@ -655,6 +816,12 @@ function frame() {
 
   // Draw planets
   drawPlanets(state.currentDate);
+
+  // Draw moons around planets
+  drawMoons(state.currentDate);
+
+  // Draw spacecraft
+  drawSpacecraft(state.currentDate);
 
   // Update info display
   updateInfoDisplay();
