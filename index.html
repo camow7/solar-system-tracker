@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar System — Ceiling View</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      user-select: none;
+    }
+
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #info {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      font-family: monospace;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+
+    #info.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="info">
+    <div id="dateDisplay">–</div>
+    <div id="timeRateDisplay">–</div>
+  </div>
+
+  <script src="js/solar-system.js"></script>
+</body>
+</html>
