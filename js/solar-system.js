@@ -367,6 +367,15 @@ function setupKeyboardControls() {
         toggleFullscreen();
         e.preventDefault();
         break;
+      case 'Escape':
+        // Escape exits fullscreen if active, but also allow browser default
+        if (state.isFullscreen) {
+          document.exitFullscreen().then(() => {
+            state.isFullscreen = false;
+            showUI();
+          }).catch(() => {}); // Ignore errors
+        }
+        break;
     }
   });
 }
@@ -390,18 +399,33 @@ function setupMouseTracking() {
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().then(() => {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.error('Fullscreen request failed:', err);
+    }).then(() => {
       state.isFullscreen = true;
       hideUI();
       requestWakeLock();
     });
   } else {
-    document.exitFullscreen().then(() => {
+    document.exitFullscreen().catch(err => {
+      console.error('Exit fullscreen failed:', err);
+    }).then(() => {
       state.isFullscreen = false;
       showUI();
     });
   }
 }
+
+// Handle fullscreen change events (e.g., Escape key)
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    state.isFullscreen = false;
+    showUI();
+  } else {
+    state.isFullscreen = true;
+    hideUI();
+  }
+});
 
 function hideUI() {
   document.getElementById('info').classList.add('hidden');
