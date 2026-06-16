@@ -125,19 +125,32 @@ function generateStars() {
 // ============================================================================
 
 /**
- * Convert AU distance to canvas pixels using logarithmic scaling
- * This compresses the huge range (0.39 AU to 30 AU) into a viewable scale
+ * Convert AU distance to canvas pixels using even spacing
+ * All planets are equally spaced regardless of actual AU distance
  */
-function auToPixels(au) {
+function auToPixels(au, planetIndex = null) {
   if (au === 0) return 0;
-  // Log-scaled with offset to prevent inner planets from clustering at center
-  const minAU = 0.3; // Start scaling from 0.3 AU
-  const scaledAU = Math.max(minAU, au);
-  const logDistance = Math.log(scaledAU) / Math.log(CONFIG.logBase);
-  const maxVisibleAU = 35; // Slightly beyond Neptune
-  const logMax = Math.log(maxVisibleAU) / Math.log(CONFIG.logBase);
-  const maxPixelRadius = Math.min(state.width, state.height) * 0.42; // Leave margin
-  return (logDistance / logMax) * maxPixelRadius;
+
+  // If planet index provided, use it directly for even spacing
+  if (planetIndex !== null) {
+    const numPlanets = CONFIG.planets.length;
+    const maxPixelRadius = Math.min(state.width, state.height) * 0.42;
+    const spacingPerPlanet = maxPixelRadius / (numPlanets + 1);
+    return spacingPerPlanet * (planetIndex + 1);
+  }
+
+  // Fallback: estimate index from AU (for older code paths)
+  const auValues = [0.39, 0.72, 1.0, 1.52, 5.2, 9.54, 19.19, 30.07];
+  let closestIndex = 0;
+  let minDiff = Infinity;
+  for (let i = 0; i < auValues.length; i++) {
+    const diff = Math.abs(auValues[i] - au);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = i;
+    }
+  }
+  return auToPixels(au, closestIndex);
 }
 
 /**
@@ -253,8 +266,8 @@ function drawOrbits() {
   state.ctx.strokeStyle = 'rgba(200, 200, 200, 0.2)';
   state.ctx.lineWidth = 1;
 
-  CONFIG.planets.forEach(planet => {
-    const radius = auToPixels(planet.au);
+  CONFIG.planets.forEach((planet, index) => {
+    const radius = auToPixels(planet.au, index);
     state.ctx.beginPath();
     state.ctx.arc(state.centerX, state.centerY, radius, 0, Math.PI * 2);
     state.ctx.stroke();
@@ -262,19 +275,22 @@ function drawOrbits() {
 }
 
 function drawPlanets(date) {
-  CONFIG.planets.forEach(planet => {
+  CONFIG.planets.forEach((planet, index) => {
     const pos = getPlanetPosition(planet.body, date);
     if (!pos) return;
 
-    const canvas = polarToCanvas(pos.angle, pos.au);
+    // Use evenly spaced pixels based on planet index
+    const pixelRadius = auToPixels(pos.au, index);
+    const x = state.centerX + pixelRadius * Math.cos(pos.angle);
+    const y = state.centerY + pixelRadius * Math.sin(pos.angle);
 
     // Add to trail (sample every few frames to reduce density)
     if (Math.random() < 0.2) { // 20% of frames add to trail
-      addTrailPoint(planet.body, canvas.x, canvas.y);
+      addTrailPoint(planet.body, x, y);
     }
 
     // Draw planet with enhanced details
-    drawPlanetDetailed(planet, canvas.x, canvas.y, planet.radius);
+    drawPlanetDetailed(planet, x, y, planet.radius);
   });
 }
 
