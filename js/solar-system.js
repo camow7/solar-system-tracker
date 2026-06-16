@@ -8,16 +8,16 @@
 // ============================================================================
 
 const CONFIG = {
-  // Planet definitions with visual properties
+  // Planet definitions with visual properties and orbital eccentricity
   planets: [
-    { name: 'Mercury', body: 'Mercury', radius: 3, color: '#8C7853' },
-    { name: 'Venus', body: 'Venus', radius: 6, color: '#FFC649' },
-    { name: 'Earth', body: 'Earth', radius: 6.5, color: '#4A90E2' },
-    { name: 'Mars', body: 'Mars', radius: 4, color: '#E27B58' },
-    { name: 'Jupiter', body: 'Jupiter', radius: 14, color: '#C88B3A' },
-    { name: 'Saturn', body: 'Saturn', radius: 12, color: '#E5C55B' },
-    { name: 'Uranus', body: 'Uranus', radius: 8, color: '#4FD0E7' },
-    { name: 'Neptune', body: 'Neptune', radius: 8, color: '#4166F5' },
+    { name: 'Mercury', body: 'Mercury', radius: 3, color: '#8C7853', eccentricity: 0.206 },
+    { name: 'Venus', body: 'Venus', radius: 6, color: '#FFC649', eccentricity: 0.007 },
+    { name: 'Earth', body: 'Earth', radius: 6.5, color: '#4A90E2', eccentricity: 0.017 },
+    { name: 'Mars', body: 'Mars', radius: 4, color: '#E27B58', eccentricity: 0.093 },
+    { name: 'Jupiter', body: 'Jupiter', radius: 14, color: '#C88B3A', eccentricity: 0.048 },
+    { name: 'Saturn', body: 'Saturn', radius: 12, color: '#E5C55B', eccentricity: 0.056 },
+    { name: 'Uranus', body: 'Uranus', radius: 8, color: '#4FD0E7', eccentricity: 0.047 },
+    { name: 'Neptune', body: 'Neptune', radius: 8, color: '#4166F5', eccentricity: 0.009 },
   ],
 
   // Visual scale: log-compressed radius for legibility
@@ -267,11 +267,33 @@ function drawOrbits() {
   state.ctx.lineWidth = 1;
 
   CONFIG.planets.forEach((planet, index) => {
-    const radius = auToPixels(planet.au, index);
-    state.ctx.beginPath();
-    state.ctx.arc(state.centerX, state.centerY, radius, 0, Math.PI * 2);
-    state.ctx.stroke();
+    const semiMajor = auToPixels(planet.au, index);
+
+    // Calculate semi-minor axis from eccentricity
+    // b = a * sqrt(1 - e²)
+    const e = planet.eccentricity || 0;
+    const semiMinor = semiMajor * Math.sqrt(1 - e * e);
+
+    // Get current planet position to rotate ellipse to align with actual orbit
+    const pos = getPlanetPosition(planet.body, state.currentDate);
+    const rotationAngle = pos ? pos.angle : 0;
+
+    // Draw ellipse
+    drawEllipse(state.centerX, state.centerY, semiMajor, semiMinor, rotationAngle);
   });
+}
+
+/**
+ * Draw an ellipse with rotation support
+ */
+function drawEllipse(centerX, centerY, radiusX, radiusY, rotation) {
+  state.ctx.save();
+  state.ctx.translate(centerX, centerY);
+  state.ctx.rotate(rotation);
+  state.ctx.beginPath();
+  state.ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+  state.ctx.restore();
+  state.ctx.stroke();
 }
 
 function drawPlanets(date) {
