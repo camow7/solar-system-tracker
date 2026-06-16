@@ -21,8 +21,9 @@ const CONFIG = {
   ],
 
   // Visual scale: log-compressed radius for legibility
-  // Adjust this to change spacing between orbits
-  logBase: 1.5,
+  // Lower value = more spread out; higher = more compressed
+  // 1.5 = tight inner planets; 1.3 = better spacing
+  logBase: 1.3,
 
   // Sun visual properties
   sunRadius: 8,
@@ -129,11 +130,14 @@ function generateStars() {
  */
 function auToPixels(au) {
   if (au === 0) return 0;
-  // Log-scaled: log(au) / log(logBase) gives a compressed distance
-  const logDistance = Math.log(au) / Math.log(CONFIG.logBase);
+  // Log-scaled with offset to prevent inner planets from clustering at center
+  const minAU = 0.3; // Start scaling from 0.3 AU
+  const scaledAU = Math.max(minAU, au);
+  const logDistance = Math.log(scaledAU) / Math.log(CONFIG.logBase);
   const maxVisibleAU = 35; // Slightly beyond Neptune
-  const maxPixelRadius = Math.min(state.width, state.height) * 0.4; // Leave margin
-  return (logDistance / Math.log(maxVisibleAU / CONFIG.logBase)) * maxPixelRadius;
+  const logMax = Math.log(maxVisibleAU) / Math.log(CONFIG.logBase);
+  const maxPixelRadius = Math.min(state.width, state.height) * 0.42; // Leave margin
+  return (logDistance / logMax) * maxPixelRadius;
 }
 
 /**
