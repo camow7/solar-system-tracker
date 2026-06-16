@@ -72,6 +72,7 @@ function init() {
   generateStars();
   setupKeyboardControls();
   setupMouseTracking();
+  setupTouchControls();
 
   // Start animation loop
   requestAnimationFrame(animate);
@@ -626,6 +627,80 @@ function setupMouseTracking() {
     hideTimeout = setTimeout(hideCursor, 3000);
   }
   document.addEventListener('mousemove', showCursor);
+}
+
+// ============================================================================
+// TOUCH CONTROLS (Mobile)
+// ============================================================================
+
+function setupTouchControls() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let lastTapTime = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 0) return;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+
+    // Detect double-tap for "snap to now"
+    const now = Date.now();
+    const tapX = touch.clientX;
+    const tapY = touch.clientY;
+    const tapDistance = Math.sqrt(Math.pow(tapX - lastTapX, 2) + Math.pow(tapY - lastTapY, 2));
+
+    if (now - lastTapTime < 300 && tapDistance < 50) {
+      // Double-tap detected
+      state.currentDate = new Date();
+      state.isPaused = false;
+      lastTapTime = 0; // Reset
+    } else {
+      lastTapTime = now;
+      lastTapX = tapX;
+      lastTapY = tapY;
+    }
+  });
+
+  document.addEventListener('touchend', (e) => {
+    if (e.changedTouches.length === 0) return;
+    const touch = e.changedTouches[0];
+    const touchEndX = touch.clientX;
+    const touchEndY = touch.clientY;
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    // Require at least 30px movement to register as swipe
+    if (distance > 30) {
+      // Horizontal swipe: adjust time rate
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 0) {
+          // Swipe right: increase time rate
+          state.timeRate *= 1.15;
+        } else {
+          // Swipe left: decrease time rate
+          state.timeRate = Math.max(0.001, state.timeRate / 1.15);
+        }
+      }
+      // Vertical swipe: pause/resume
+      else if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        state.isPaused = !state.isPaused;
+      }
+    }
+    // Single tap (small movement): pause/resume
+    else if (distance < 15 && Date.now() - lastTapTime > 300) {
+      state.isPaused = !state.isPaused;
+    }
+  });
+
+  // Prevent default touch behaviors (zoom, scroll)
+  document.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // ============================================================================

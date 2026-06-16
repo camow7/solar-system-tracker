@@ -18,17 +18,25 @@ python3 -m http.server 8000  # Or use any static server
 
 Then open `http://localhost:8000` in a browser.
 
-## Keyboard Controls
+## Controls
 
-### Navigation & Time
+### Desktop — Keyboard
 - **+** / **−** — Increase/decrease simulation speed (default: 1 day/sec)
 - **Space** — Pause/resume animation
 - **N** — Snap to current date/time and resume
-- **Escape** — Exit fullscreen (when in projection mode)
+- **F** — Toggle fullscreen (projection mode)
+- **Escape** — Exit fullscreen
 
-### Projection Mode
-- **F** — Toggle fullscreen (enables projection mode)
-  - UI hidden
+### Mobile — Touch Gestures
+- **Swipe Right** — Speed up simulation
+- **Swipe Left** — Slow down simulation
+- **Swipe Up/Down** — Pause/resume
+- **Tap** — Pause/resume
+- **Double-tap** — Snap to current date/time
+
+### Projection Mode (Desktop)
+- Press **F** to enter fullscreen:
+  - UI automatically hidden
   - Screen wake-lock active (prevents display sleep)
   - Mouse cursor auto-hides after 3 seconds of inactivity
   - Press **F** or **Escape** to exit
