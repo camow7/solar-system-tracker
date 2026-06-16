@@ -25,6 +25,10 @@ const CONFIG = {
   // 1.5 = tight inner planets; 1.3 = better spacing
   logBase: 1.3,
 
+  // Eccentricity exaggeration factor for visual clarity
+  // Real eccentricities are very small; multiply by this to make them visible
+  eccentricityScale: 3.0,
+
   // Sun visual properties
   sunRadius: 8,
   sunColor: '#FDB813',
@@ -269,10 +273,11 @@ function drawOrbits() {
   CONFIG.planets.forEach((planet, index) => {
     const semiMajor = auToPixels(planet.au, index);
 
-    // Calculate semi-minor axis from eccentricity
-    // b = a * sqrt(1 - e²)
-    const e = planet.eccentricity || 0;
-    const semiMinor = semiMajor * Math.sqrt(1 - e * e);
+    // Calculate semi-minor axis from exaggerated eccentricity for visibility
+    // b = a * sqrt(1 - (e * scale)²), clamped to prevent negative values
+    const e = (planet.eccentricity || 0) * CONFIG.eccentricityScale;
+    const eClamped = Math.min(e, 0.99); // Prevent b from being 0 or negative
+    const semiMinor = semiMajor * Math.sqrt(1 - eClamped * eClamped);
 
     // Get current planet position to rotate ellipse to align with actual orbit
     const pos = getPlanetPosition(planet.body, state.currentDate);
