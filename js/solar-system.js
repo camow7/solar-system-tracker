@@ -268,17 +268,252 @@ function drawPlanets(date) {
       addTrailPoint(planet.body, canvas.x, canvas.y);
     }
 
-    // Draw planet
-    state.ctx.fillStyle = planet.color;
-    state.ctx.beginPath();
-    state.ctx.arc(canvas.x, canvas.y, planet.radius, 0, Math.PI * 2);
-    state.ctx.fill();
-
-    // Optional: subtle outline
-    state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    state.ctx.lineWidth = 0.5;
-    state.ctx.stroke();
+    // Draw planet with enhanced details
+    drawPlanetDetailed(planet, canvas.x, canvas.y, planet.radius);
   });
+}
+
+/**
+ * Draw a planet with procedural details (bands, rings, continents, etc.)
+ */
+function drawPlanetDetailed(planet, x, y, radius) {
+  const ctx = state.ctx;
+
+  // Base gradient: brighter center, darker edges for depth
+  const gradient = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
+  gradient.addColorStop(0, lightenColor(planet.color, 0.4));
+  gradient.addColorStop(0.7, planet.color);
+  gradient.addColorStop(1, darkenColor(planet.color, 0.3));
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Planet-specific details
+  switch (planet.body) {
+    case 'Jupiter':
+      drawJupiter(x, y, radius);
+      break;
+    case 'Saturn':
+      drawSaturn(x, y, radius);
+      break;
+    case 'Earth':
+      drawEarth(x, y, radius);
+      break;
+    case 'Mars':
+      drawMars(x, y, radius);
+      break;
+    case 'Venus':
+      drawVenus(x, y, radius);
+      break;
+    case 'Uranus':
+      drawUranus(x, y, radius);
+      break;
+    case 'Neptune':
+      drawNeptune(x, y, radius);
+      break;
+  }
+
+  // Subtle outline
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/**
+ * Helper: lighten a color
+ */
+function lightenColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + Math.floor(255 * amount));
+  const g = Math.min(255, ((num >> 8) & 0xff) + Math.floor(255 * amount));
+  const b = Math.min(255, (num & 0xff) + Math.floor(255 * amount));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Helper: darken a color
+ */
+function darkenColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, (num >> 16) - Math.floor(255 * amount));
+  const g = Math.max(0, ((num >> 8) & 0xff) - Math.floor(255 * amount));
+  const b = Math.max(0, (num & 0xff) - Math.floor(255 * amount));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Draw Jupiter with bands
+ */
+function drawJupiter(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Great Red Spot (simplified)
+  ctx.fillStyle = 'rgba(200, 100, 0, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(x + radius * 0.2, y + radius * 0.15, radius * 0.3, radius * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Equatorial bands (horizontal stripes)
+  const bandCount = 5;
+  const bandHeight = (radius * 1.8) / bandCount;
+  for (let i = 0; i < bandCount; i++) {
+    if (i % 2 === 0) {
+      ctx.fillStyle = 'rgba(100, 50, 0, 0.15)';
+      ctx.fillRect(x - radius, y - radius + i * bandHeight, radius * 2, bandHeight);
+    }
+  }
+}
+
+/**
+ * Draw Saturn with rings
+ */
+function drawSaturn(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Rings (drawn before planet for proper z-order, then redraw planet on top)
+  // Actually, we need to draw rings around the planet
+  const ringRadiusOuter = radius * 2;
+  const ringRadiusInner = radius * 1.3;
+  const ringThickness = ringRadiusOuter - ringRadiusInner;
+
+  // Draw ring as ellipse (tilted for perspective)
+  ctx.strokeStyle = 'rgba(200, 180, 140, 0.4)';
+  ctx.lineWidth = ringThickness * 0.6;
+  ctx.beginPath();
+  ctx.ellipse(x, y, ringRadiusOuter, ringRadiusOuter * 0.3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Ring shadow (darker on one side)
+  ctx.strokeStyle = 'rgba(100, 80, 60, 0.3)';
+  ctx.lineWidth = ringThickness * 0.3;
+  ctx.beginPath();
+  ctx.ellipse(x, y, ringRadiusInner, ringRadiusInner * 0.3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Subtle bands
+  ctx.fillStyle = 'rgba(150, 120, 80, 0.1)';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(x - radius, y - radius * 0.3 + i * radius * 0.2, radius * 2, radius * 0.1);
+  }
+}
+
+/**
+ * Draw Earth with simple continents
+ */
+function drawEarth(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Subtle green continents (very faint)
+  ctx.fillStyle = 'rgba(100, 150, 80, 0.2)';
+
+  // North America
+  ctx.beginPath();
+  ctx.ellipse(x - radius * 0.3, y - radius * 0.2, radius * 0.25, radius * 0.35, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eurasia
+  ctx.beginPath();
+  ctx.ellipse(x + radius * 0.15, y - radius * 0.25, radius * 0.4, radius * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Africa
+  ctx.beginPath();
+  ctx.ellipse(x + radius * 0.1, y + radius * 0.1, radius * 0.2, radius * 0.3, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cloud bands (very subtle)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/**
+ * Draw Mars with polar caps
+ */
+function drawMars(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Polar ice caps (white at poles)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+
+  // North pole
+  ctx.beginPath();
+  ctx.ellipse(x, y - radius * 0.85, radius * 0.4, radius * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // South pole
+  ctx.beginPath();
+  ctx.ellipse(x, y + radius * 0.85, radius * 0.4, radius * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Slight surface variation
+  ctx.fillStyle = 'rgba(200, 100, 50, 0.15)';
+  ctx.beginPath();
+  ctx.ellipse(x + radius * 0.2, y + radius * 0.1, radius * 0.5, radius * 0.6, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Draw Venus with atmospheric glow
+ */
+function drawVenus(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Atmospheric glow
+  const glowGrad = ctx.createRadialGradient(x, y, radius, x, y, radius * 1.3);
+  glowGrad.addColorStop(0, 'rgba(255, 220, 100, 0.2)');
+  glowGrad.addColorStop(1, 'rgba(255, 220, 100, 0)');
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Subtle cloud bands
+  ctx.strokeStyle = 'rgba(255, 240, 200, 0.2)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y + (i - 1) * radius * 0.3, radius * 0.95, radius * 0.25, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+/**
+ * Draw Uranus with subtle bands
+ */
+function drawUranus(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Faint bands
+  ctx.fillStyle = 'rgba(100, 200, 220, 0.15)';
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(x - radius, y - radius + i * radius * 0.5, radius * 2, radius * 0.25);
+  }
+}
+
+/**
+ * Draw Neptune with subtle bands
+ */
+function drawNeptune(x, y, radius) {
+  const ctx = state.ctx;
+
+  // Great Dark Spot (simplified)
+  ctx.fillStyle = 'rgba(0, 50, 100, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(x - radius * 0.15, y + radius * 0.2, radius * 0.25, radius * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Faint bands
+  ctx.fillStyle = 'rgba(100, 150, 200, 0.1)';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(x - radius, y - radius + i * radius * 0.65, radius * 2, radius * 0.2);
+  }
 }
 
 function frame() {
