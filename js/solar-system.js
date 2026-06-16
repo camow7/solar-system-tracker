@@ -423,35 +423,47 @@ function drawSaturn(x, y, radius) {
 }
 
 /**
- * Draw Earth with simple continents
+ * Draw Earth with visible continents
  */
 function drawEarth(x, y, radius) {
   const ctx = state.ctx;
 
-  // Subtle green continents (very faint)
-  ctx.fillStyle = 'rgba(100, 150, 80, 0.2)';
+  // Green continents (much more visible)
+  ctx.fillStyle = 'rgba(80, 140, 60, 0.5)';
 
   // North America
   ctx.beginPath();
-  ctx.ellipse(x - radius * 0.3, y - radius * 0.2, radius * 0.25, radius * 0.35, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(x - radius * 0.35, y - radius * 0.15, radius * 0.3, radius * 0.4, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // South America
+  ctx.beginPath();
+  ctx.ellipse(x - radius * 0.25, y + radius * 0.35, radius * 0.15, radius * 0.25, 0.3, 0, Math.PI * 2);
   ctx.fill();
 
   // Eurasia
   ctx.beginPath();
-  ctx.ellipse(x + radius * 0.15, y - radius * 0.25, radius * 0.4, radius * 0.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + radius * 0.15, y - radius * 0.3, radius * 0.45, radius * 0.25, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Africa
   ctx.beginPath();
-  ctx.ellipse(x + radius * 0.1, y + radius * 0.1, radius * 0.2, radius * 0.3, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(x + radius * 0.1, y + radius * 0.15, radius * 0.25, radius * 0.35, 0.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Cloud bands (very subtle)
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-  ctx.lineWidth = 0.5;
+  // Australia
   ctx.beginPath();
-  ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
-  ctx.stroke();
+  ctx.ellipse(x + radius * 0.35, y + radius * 0.25, radius * 0.15, radius * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cloud bands (subtle white overlay)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y + (i - 1) * radius * 0.35, radius * 1.0, radius * 0.2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }
 
 /**
