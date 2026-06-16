@@ -108,9 +108,26 @@ function init() {
   setupKeyboardControls();
   setupMouseTracking();
   setupTouchControls();
+  setupHelpModal();
 
   // Start animation loop
   requestAnimationFrame(animate);
+}
+
+function setupHelpModal() {
+  const helpButton = document.getElementById('helpButton');
+  const closeButton = document.getElementById('closeModal');
+  const modal = document.getElementById('modal');
+
+  helpButton.addEventListener('click', toggleHelpModal);
+  closeButton.addEventListener('click', closeHelpModal);
+
+  // Close modal when clicking outside the content
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeHelpModal();
+    }
+  });
 }
 
 function resizeCanvas() {
@@ -897,8 +914,17 @@ function setupKeyboardControls() {
         toggleFullscreen();
         e.preventDefault();
         break;
+      case '?':
+        toggleHelpModal();
+        e.preventDefault();
+        break;
       case 'Escape':
-        // Escape exits fullscreen if active, but also allow browser default
+        // Close modal if open
+        const modal = document.getElementById('modal');
+        if (modal.classList.contains('show')) {
+          closeHelpModal();
+        }
+        // Escape exits fullscreen if active
         if (state.isFullscreen) {
           document.exitFullscreen().then(() => {
             state.isFullscreen = false;
@@ -908,6 +934,16 @@ function setupKeyboardControls() {
         break;
     }
   });
+}
+
+function toggleHelpModal() {
+  const modal = document.getElementById('modal');
+  modal.classList.toggle('show');
+}
+
+function closeHelpModal() {
+  const modal = document.getElementById('modal');
+  modal.classList.remove('show');
 }
 
 function setupMouseTracking() {
