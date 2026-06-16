@@ -8,16 +8,16 @@
 // ============================================================================
 
 const CONFIG = {
-  // Orbital radii in AU (astronomical units)
+  // Planet definitions with visual properties
   planets: [
-    { name: 'Mercury', au: 0.39 },
-    { name: 'Venus', au: 0.72 },
-    { name: 'Earth', au: 1.0 },
-    { name: 'Mars', au: 1.52 },
-    { name: 'Jupiter', au: 5.2 },
-    { name: 'Saturn', au: 9.54 },
-    { name: 'Uranus', au: 19.19 },
-    { name: 'Neptune', au: 30.07 },
+    { name: 'Mercury', body: 'Mercury', radius: 3, color: '#8C7853' },
+    { name: 'Venus', body: 'Venus', radius: 6, color: '#FFC649' },
+    { name: 'Earth', body: 'Earth', radius: 6.5, color: '#4A90E2' },
+    { name: 'Mars', body: 'Mars', radius: 4, color: '#E27B58' },
+    { name: 'Jupiter', body: 'Jupiter', radius: 14, color: '#C88B3A' },
+    { name: 'Saturn', body: 'Saturn', radius: 12, color: '#E5C55B' },
+    { name: 'Uranus', body: 'Uranus', radius: 8, color: '#4FD0E7' },
+    { name: 'Neptune', body: 'Neptune', radius: 8, color: '#4166F5' },
   ],
 
   // Visual scale: log-compressed radius for legibility
@@ -124,11 +124,48 @@ function generateStars() {
  * This compresses the huge range (0.39 AU to 30 AU) into a viewable scale
  */
 function auToPixels(au) {
+  if (au === 0) return 0;
   // Log-scaled: log(au) / log(logBase) gives a compressed distance
   const logDistance = Math.log(au) / Math.log(CONFIG.logBase);
   const maxVisibleAU = 35; // Slightly beyond Neptune
   const maxPixelRadius = Math.min(state.width, state.height) * 0.4; // Leave margin
   return (logDistance / Math.log(maxVisibleAU / CONFIG.logBase)) * maxPixelRadius;
+}
+
+/**
+ * Get heliocentric ecliptic position of a planet for a given date
+ * Returns { angle (radians), distance (AU) } in top-down polar coordinates
+ */
+function getPlanetPosition(bodyName, date) {
+  if (typeof Astronomy === 'undefined') {
+    console.error('Astronomy engine not loaded');
+    return null;
+  }
+
+  try {
+    // HelioVector returns heliocentric position vector in AU
+    const vector = Astronomy.HelioVector(bodyName, date);
+
+    // Convert to top-down polar coordinates
+    // x, y are in ecliptic plane; z is out of plane (ignored for top-down view)
+    const au = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+    const angle = Math.atan2(vector.y, vector.x);
+
+    return { angle, au };
+  } catch (err) {
+    console.error(`Failed to get position for ${bodyName}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Convert polar to Cartesian coordinates on canvas
+ */
+function polarToCanvas(angle, au) {
+  const pixelRadius = auToPixels(au);
+  const x = state.centerX + pixelRadius * Math.cos(angle);
+  const y = state.centerY + pixelRadius * Math.sin(angle);
+  return { x, y, pixelRadius };
 }
 
 // ============================================================================
@@ -176,8 +213,23 @@ function drawOrbits() {
 }
 
 function drawPlanets(date) {
-  // For phase 1, just show orbital rings. Phase 2 will add real positions.
-  // This is a placeholder for planet rendering.
+  CONFIG.planets.forEach(planet => {
+    const pos = getPlanetPosition(planet.body, date);
+    if (!pos) return;
+
+    const canvas = polarToCanvas(pos.angle, pos.au);
+
+    // Draw planet
+    state.ctx.fillStyle = planet.color;
+    state.ctx.beginPath();
+    state.ctx.arc(canvas.x, canvas.y, planet.radius, 0, Math.PI * 2);
+    state.ctx.fill();
+
+    // Optional: subtle outline
+    state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    state.ctx.lineWidth = 0.5;
+    state.ctx.stroke();
+  });
 }
 
 function frame() {
@@ -193,6 +245,9 @@ function frame() {
 
   // Draw Sun
   drawSun();
+
+  // Draw planets
+  drawPlanets(state.currentDate);
 
   // Update info display
   updateInfoDisplay();

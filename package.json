@@ -1,0 +1,20 @@
+{
+  "name": "solar-system-projection",
+  "version": "1.0.0",
+  "description": "Solar system ceiling projection map",
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "vendor": "npm install --no-save astronomy-engine && cp -r node_modules/astronomy-engine lib/"
+  },
+  "keywords": [
+    "solar-system",
+    "projection",
+    "astronomy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19"
+  }
+}
