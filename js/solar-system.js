@@ -53,6 +53,9 @@ let state = {
   // Stars cache
   stars: [],
 
+  // Orbit trails: { planetBody: [{ x, y, alpha }, ...] }
+  trails: {},
+
   // Projection mode
   isFullscreen: false,
 };
@@ -168,6 +171,47 @@ function polarToCanvas(angle, au) {
   return { x, y, pixelRadius };
 }
 
+/**
+ * Add a point to a planet's orbit trail
+ */
+function addTrailPoint(bodyName, x, y) {
+  if (!state.trails[bodyName]) {
+    state.trails[bodyName] = [];
+  }
+
+  state.trails[bodyName].push({ x, y });
+
+  // Keep trail at reasonable length (e.g., last 50 points = ~5-10 frames at 60fps)
+  // This gives a subtle fade trail without memory bloat
+  if (state.trails[bodyName].length > 50) {
+    state.trails[bodyName].shift();
+  }
+}
+
+/**
+ * Draw orbit trails for all planets
+ */
+function drawTrails() {
+  state.ctx.lineWidth = 1;
+
+  Object.entries(state.trails).forEach(([bodyName, points]) => {
+    if (points.length < 2) return;
+
+    // Draw trail as a line with fading alpha
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const alpha = (i / points.length) * 0.3; // Max 30% opacity
+
+      state.ctx.strokeStyle = `rgba(200, 200, 200, ${alpha})`;
+      state.ctx.beginPath();
+      state.ctx.moveTo(p1.x, p1.y);
+      state.ctx.lineTo(p2.x, p2.y);
+      state.ctx.stroke();
+    }
+  });
+}
+
 // ============================================================================
 // RENDERING
 // ============================================================================
@@ -219,6 +263,11 @@ function drawPlanets(date) {
 
     const canvas = polarToCanvas(pos.angle, pos.au);
 
+    // Add to trail (sample every few frames to reduce density)
+    if (Math.random() < 0.2) { // 20% of frames add to trail
+      addTrailPoint(planet.body, canvas.x, canvas.y);
+    }
+
     // Draw planet
     state.ctx.fillStyle = planet.color;
     state.ctx.beginPath();
@@ -242,6 +291,9 @@ function frame() {
 
   // Draw orbital rings
   drawOrbits();
+
+  // Draw orbit trails (before planets so they appear behind)
+  drawTrails();
 
   // Draw Sun
   drawSun();
