@@ -318,6 +318,11 @@ function drawPlanets(date) {
 
     // Draw planet with enhanced details
     drawPlanetDetailed(planet, x, y, planet.radius);
+
+    // Draw Moon around Earth
+    if (planet.body === 'Earth') {
+      drawMoonAroundEarth(date, x, y);
+    }
   });
 }
 
@@ -573,6 +578,62 @@ function drawNeptune(x, y, radius) {
   ctx.fillStyle = 'rgba(100, 150, 200, 0.1)';
   for (let i = 0; i < 3; i++) {
     ctx.fillRect(x - radius, y - radius + i * radius * 0.65, radius * 2, radius * 0.2);
+  }
+}
+
+/**
+ * Draw the Moon orbiting Earth
+ * Moon's actual distance is ~0.00257 AU; exaggerate for visibility
+ */
+function drawMoonAroundEarth(date, earthX, earthY) {
+  try {
+    if (typeof Astronomy === 'undefined') return;
+
+    // Get Moon's heliocentric position
+    const moonHelio = Astronomy.HelioVector('Moon', date);
+    const earthHelio = Astronomy.HelioVector('Earth', date);
+
+    // Calculate Moon's position relative to Earth
+    const moonRelX = moonHelio.x - earthHelio.x;
+    const moonRelY = moonHelio.y - earthHelio.y;
+    const moonDistance = Math.sqrt(moonRelX * moonRelX + moonRelY * moonRelY); // AU
+
+    // Moon's actual distance is ~0.00257 AU; exaggerate by 500x for visibility
+    const exaggerationFactor = 500;
+    const moonVisualDistance = moonDistance * exaggerationFactor;
+
+    // Scale to canvas pixels (roughly 1 AU exaggerated ≈ 50-100 pixels at typical zoom)
+    const pixelDistance = moonVisualDistance * 40; // Adjust this multiplier to scale Moon orbit
+
+    // Calculate Moon's position relative to Earth
+    const moonAngle = Math.atan2(moonRelY, moonRelX);
+    const moonX = earthX + pixelDistance * Math.cos(moonAngle);
+    const moonY = earthY + pixelDistance * Math.sin(moonAngle);
+
+    // Draw Moon's orbital path (thin circle around Earth)
+    state.ctx.strokeStyle = 'rgba(200, 200, 200, 0.1)';
+    state.ctx.lineWidth = 0.5;
+    state.ctx.beginPath();
+    state.ctx.arc(earthX, earthY, pixelDistance, 0, Math.PI * 2);
+    state.ctx.stroke();
+
+    // Draw Moon (small gray sphere)
+    const moonRadius = 2.5; // Visual size on screen
+    const moonGradient = state.ctx.createRadialGradient(moonX - moonRadius * 0.3, moonY - moonRadius * 0.3, 0, moonX, moonY, moonRadius);
+    moonGradient.addColorStop(0, 'rgba(200, 200, 200, 0.9)');
+    moonGradient.addColorStop(1, 'rgba(120, 120, 120, 0.9)');
+
+    state.ctx.fillStyle = moonGradient;
+    state.ctx.beginPath();
+    state.ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+    state.ctx.fill();
+
+    // Subtle outline
+    state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    state.ctx.lineWidth = 0.3;
+    state.ctx.stroke();
+  } catch (err) {
+    console.warn('Failed to render Moon:', err);
   }
 }
 
