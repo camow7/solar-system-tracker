@@ -598,12 +598,11 @@ function drawMoonAroundEarth(date, earthX, earthY) {
     const moonRelY = moonHelio.y - earthHelio.y;
     const moonDistance = Math.sqrt(moonRelX * moonRelX + moonRelY * moonRelY); // AU
 
-    // Moon's actual distance is ~0.00257 AU; exaggerate by 500x for visibility
-    const exaggerationFactor = 500;
-    const moonVisualDistance = moonDistance * exaggerationFactor;
-
-    // Scale to canvas pixels (roughly 1 AU exaggerated ≈ 50-100 pixels at typical zoom)
-    const pixelDistance = moonVisualDistance * 40; // Adjust this multiplier to scale Moon orbit
+    // Moon's actual distance is ~0.00257 AU
+    // Use a fixed visual distance that scales with Earth's planet radius
+    // This keeps the Moon orbit proportional to Earth's visual size
+    const earthRadius = 6.5; // From CONFIG.planets[Earth].radius
+    const pixelDistance = earthRadius * 2; // Moon orbits at ~2x Earth's visual radius
 
     // Calculate Moon's position relative to Earth
     const moonAngle = Math.atan2(moonRelY, moonRelX);
