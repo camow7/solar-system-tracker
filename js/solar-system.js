@@ -550,6 +550,14 @@ function updateInfoDisplay() {
 
   const rateStr = state.isPaused ? 'PAUSED' : `${state.timeRate.toFixed(2)} d/s`;
   rateEl.textContent = `Rate: ${rateStr}`;
+
+  // Debug: show planet positions
+  const earthPos = getPlanetPosition('Earth', state.currentDate);
+  if (earthPos) {
+    const canvas = polarToCanvas(earthPos.angle, earthPos.au);
+    const inBounds = canvas.x >= 0 && canvas.x <= state.width && canvas.y >= 0 && canvas.y <= state.height;
+    dateEl.textContent += ` | Earth: ${earthPos.au.toFixed(2)} AU ${inBounds ? '✓' : '✗'}`;
+  }
 }
 
 // ============================================================================
