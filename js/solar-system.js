@@ -119,10 +119,12 @@ function init() {
 
 function setupHelpModal() {
   const helpButton = document.getElementById('helpButton');
+  const labelsButton = document.getElementById('labelsButton');
   const closeButton = document.getElementById('closeModal');
   const modal = document.getElementById('modal');
 
   helpButton.addEventListener('click', toggleHelpModal);
+  labelsButton.addEventListener('click', toggleLabelsAndUpdateButton);
   closeButton.addEventListener('click', closeHelpModal);
 
   // Close modal when clicking outside the content
@@ -131,6 +133,23 @@ function setupHelpModal() {
       closeHelpModal();
     }
   });
+
+  // Update labels button state on first load
+  updateLabelsButtonState();
+}
+
+function toggleLabelsAndUpdateButton() {
+  state.showLabels = !state.showLabels;
+  updateLabelsButtonState();
+}
+
+function updateLabelsButtonState() {
+  const labelsButton = document.getElementById('labelsButton');
+  if (state.showLabels) {
+    labelsButton.classList.add('active');
+  } else {
+    labelsButton.classList.remove('active');
+  }
 }
 
 function resizeCanvas() {
@@ -976,6 +995,9 @@ function animate() {
 
   // Render frame
   frame();
+
+  // Update UI state
+  updateLabelsButtonState();
 
   // Continue loop
   requestAnimationFrame(animate);
