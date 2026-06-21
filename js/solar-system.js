@@ -91,6 +91,9 @@ let state = {
   // Orbit trails: { planetBody: [{ x, y, alpha }, ...] }
   trails: {},
 
+  // Display options
+  showLabels: false,
+
   // Projection mode
   isFullscreen: false,
 };
@@ -811,6 +814,101 @@ function drawSpacecraft(date) {
   });
 }
 
+/**
+ * Draw labels for all objects (planets, moons, asteroids, spacecraft)
+ */
+function drawLabels(date) {
+  state.ctx.font = '12px monospace';
+  state.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  state.ctx.textAlign = 'left';
+
+  // Draw planet labels
+  CONFIG.planets.forEach((planet, index) => {
+    const pos = getPlanetPosition(planet.body, date);
+    if (!pos) return;
+
+    const pixelRadius = auToPixels(pos.au, index);
+    const x = state.centerX + pixelRadius * Math.cos(pos.angle);
+    const y = state.centerY + pixelRadius * Math.sin(pos.angle);
+
+    drawLabel(planet.name, x + planet.radius + 5, y - planet.radius);
+  });
+
+  // Draw moon labels
+  CONFIG.moons.forEach((moon) => {
+    try {
+      const planetPos = getPlanetPosition(moon.parent, date);
+      if (!planetPos) return;
+
+      const planetIndex = CONFIG.planets.findIndex(p => p.body === moon.parent);
+      const pixelRadius = auToPixels(planetPos.au, planetIndex);
+      const planetX = state.centerX + pixelRadius * Math.cos(planetPos.angle);
+      const planetY = state.centerY + pixelRadius * Math.sin(planetPos.angle);
+
+      const moonHelio = Astronomy.HelioVector(moon.body, date);
+      const moonRelX = moonHelio.x - planetPos.x;
+      const moonRelY = moonHelio.y - planetPos.y;
+      const moonVisualDistance = CONFIG.planets[planetIndex].radius * (1.5 + CONFIG.moons.indexOf(moon) * 0.8);
+
+      const moonAngle = Math.atan2(moonRelY, moonRelX);
+      const moonX = planetX + moonVisualDistance * Math.cos(moonAngle);
+      const moonY = planetY + moonVisualDistance * Math.sin(moonAngle);
+
+      drawLabel(moon.name, moonX + 4, moonY - 8);
+    } catch (err) {
+      // Skip if moon data unavailable
+    }
+  });
+
+  // Draw asteroid labels
+  CONFIG.asteroids.forEach(asteroid => {
+    const angle = (date.getTime() / 1000 / 365.25 / 86400 + asteroid.au) % (Math.PI * 2);
+    const pixelRadius = state.centerX * 0.35 + CONFIG.asteroids.indexOf(asteroid) * 8;
+    const x = state.centerX + pixelRadius * Math.cos(angle);
+    const y = state.centerY + pixelRadius * Math.sin(angle);
+
+    drawLabel(asteroid.name, x + 4, y - 8);
+  });
+
+  // Draw spacecraft labels
+  CONFIG.spacecraft.forEach(craft => {
+    const angle = (date.getTime() / 1000 / 365.25 / 86400 + craft.angle) % (Math.PI * 2);
+
+    let pixelDistance;
+    if (craft.au < 1) {
+      pixelDistance = auToPixels(craft.au, 2);
+    } else if (craft.au < 35) {
+      pixelDistance = auToPixels(craft.au, Math.floor(craft.au));
+    } else {
+      pixelDistance = state.centerX * 0.45;
+    }
+
+    const x = state.centerX + pixelDistance * Math.cos(angle);
+    const y = state.centerY + pixelDistance * Math.sin(angle);
+
+    drawLabel(craft.name, x + 6, y - 8);
+  });
+}
+
+/**
+ * Draw a single label with background
+ */
+function drawLabel(text, x, y) {
+  state.ctx.font = '11px monospace';
+  const metrics = state.ctx.measureText(text);
+  const textWidth = metrics.width;
+  const textHeight = 12;
+
+  // Semi-transparent background
+  state.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  state.ctx.fillRect(x - 2, y - textHeight + 2, textWidth + 4, textHeight);
+
+  // Text
+  state.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  state.ctx.textAlign = 'left';
+  state.ctx.fillText(text, x, y);
+}
+
 function frame() {
   // Clear canvas with dark background
   state.ctx.fillStyle = '#000';
@@ -840,6 +938,11 @@ function frame() {
   // Draw spacecraft
   drawSpacecraft(state.currentDate);
 
+  // Draw labels if enabled
+  if (state.showLabels) {
+    drawLabels(state.currentDate);
+  }
+
   // Update info display
   updateInfoDisplay();
 }
@@ -852,15 +955,8 @@ function updateInfoDisplay() {
   dateEl.textContent = `Date: ${dateStr}`;
 
   const rateStr = state.isPaused ? 'PAUSED' : `${state.timeRate.toFixed(2)} d/s`;
-  rateEl.textContent = `Rate: ${rateStr}`;
-
-  // Debug: show planet positions
-  const earthPos = getPlanetPosition('Earth', state.currentDate);
-  if (earthPos) {
-    const canvas = polarToCanvas(earthPos.angle, earthPos.au);
-    const inBounds = canvas.x >= 0 && canvas.x <= state.width && canvas.y >= 0 && canvas.y <= state.height;
-    dateEl.textContent += ` | Earth: ${earthPos.au.toFixed(2)} AU ${inBounds ? '✓' : '✗'}`;
-  }
+  const labelStr = state.showLabels ? ' | Labels ON' : '';
+  rateEl.textContent = `Rate: ${rateStr}${labelStr}`;
 }
 
 // ============================================================================
@@ -916,6 +1012,11 @@ function setupKeyboardControls() {
         break;
       case '?':
         toggleHelpModal();
+        e.preventDefault();
+        break;
+      case 'l':
+      case 'L':
+        state.showLabels = !state.showLabels;
         e.preventDefault();
         break;
       case 'Escape':
